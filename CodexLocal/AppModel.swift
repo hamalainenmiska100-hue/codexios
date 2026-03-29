@@ -298,7 +298,7 @@ final class AppModel: ObservableObject, @unchecked Sendable {
                 prompt: prompt,
                 selectedFilePath: self.selectedFilePath,
                 exportURL: self.outputFolderURL,
-                exportFolderName: self.outputFolderName == "No export folder" ? nil : self.outputFolderName,
+                exportFolderName: self.exportFolderName == "No export folder" ? nil : self.exportFolderName,
                 settings: self.settings,
                 eventSink: { [weak self] event in
                     guard let self else { return }
