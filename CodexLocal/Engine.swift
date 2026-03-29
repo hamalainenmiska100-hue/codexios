@@ -3,6 +3,7 @@ import Foundation
 typealias AgentEventSink = @Sendable (AgentStreamEvent) async -> Void
 typealias ApprovalSink = @Sendable (PendingWriteApproval) async -> Void
 
+@MainActor
 final class LocalCodexEngine {
     private let workspace: WorkspaceService
     private let runtime: ContainerRuntime
