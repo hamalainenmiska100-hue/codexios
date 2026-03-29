@@ -1,0 +1,49 @@
+name: Build iOS App (Unsigned IPA)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Resolve dependencies
+        run: xcodebuild -resolvePackageDependencies
+
+      - name: Build app (no signing)
+        run: |
+          xcodebuild \
+          -scheme CodexLocal \
+          -configuration Release \
+          -sdk iphoneos \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          build \
+          BUILD_DIR=build
+
+      - name: Create Payload
+        run: |
+          mkdir -p Payload
+          cp -r build/Release-iphoneos/*.app Payload/
+
+      - name: Create IPA
+        run: |
+          zip -r CodexLocal.ipa Payload
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodexLocal-unsigned-ipa
+          path: CodexLocal.ipa
