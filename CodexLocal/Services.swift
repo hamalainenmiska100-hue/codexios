@@ -31,9 +31,25 @@ final class BookmarkStore {
     static let workspaceKey = "bookmark.workspace"
     static let exportKey = "bookmark.export"
 
+    private static var bookmarkCreationOptions: URL.BookmarkCreationOptions {
+#if os(macOS)
+        return .withSecurityScope
+#else
+        return []
+#endif
+    }
+
+    private static var bookmarkResolutionOptions: URL.BookmarkResolutionOptions {
+#if os(macOS)
+        return [.withSecurityScope, .withoutUI]
+#else
+        return []
+#endif
+    }
+
     func save(url: URL, for key: String) throws {
         let data = try url.bookmarkData(
-            options: .withSecurityScope,
+            options: Self.bookmarkCreationOptions,
             includingResourceValuesForKeys: nil,
             relativeTo: nil
         )
@@ -48,7 +64,7 @@ final class BookmarkStore {
         var isStale = false
         let url = try URL(
             resolvingBookmarkData: data,
-            options: [.withSecurityScope, .withoutUI],
+            options: Self.bookmarkResolutionOptions,
             relativeTo: nil,
             bookmarkDataIsStale: &isStale
         )
@@ -57,9 +73,11 @@ final class BookmarkStore {
             try save(url: url, for: key)
         }
 
+#if os(macOS)
         guard url.startAccessingSecurityScopedResource() else {
             throw WorkspaceError.bookmarkAccessFailed(url.lastPathComponent)
         }
+#endif
 
         return url
     }
