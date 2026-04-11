@@ -3,6 +3,7 @@ import Foundation
 enum AuthMode: String, Codable, CaseIterable {
     case localDevice = "On-device"
     case importedCodexAuth = "Imported auth.json"
+    case google = "Google"
     case apiKey = "API key"
 }
 

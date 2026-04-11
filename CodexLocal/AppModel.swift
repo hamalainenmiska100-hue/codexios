@@ -41,6 +41,8 @@ final class AppModel: ObservableObject, @unchecked Sendable {
     private static let exportBookmarkKey = "exportRoot"
     private static let apiKeyAccount = "openai.api.key"
     private static let codexAuthAccount = "codex.auth.json"
+    private static let googleIDTokenAccount = "google.id.token"
+    private static let codexAuthFilenameKey = "CodexLocal.codexAuth.filename"
 
     init() {
         self.engine = LocalCodexEngine(workspace: workspaceService, runtime: runtime)
@@ -79,8 +81,10 @@ final class AppModel: ObservableObject, @unchecked Sendable {
     func importCodexAuthJSON(from url: URL) {
         do {
             let data = try Data(contentsOf: url)
+            _ = try JSONSerialization.jsonObject(with: data)
             let text = String(decoding: data, as: UTF8.self)
             try keychain.saveString(text, account: Self.codexAuthAccount)
+            UserDefaults.standard.set(url.lastPathComponent, forKey: Self.codexAuthFilenameKey)
             authState = AuthState(
                 isSignedIn: true,
                 displayName: "Codex credentials",
@@ -91,6 +95,28 @@ final class AppModel: ObservableObject, @unchecked Sendable {
             showStatus("Imported \(url.lastPathComponent).")
         } catch {
             showStatus("Import failed: \(error.localizedDescription)")
+        }
+    }
+
+    func saveGoogleIDToken(_ token: String) {
+        let trimmed = token.trimmed
+        guard !trimmed.isEmpty else {
+            showStatus("Paste a non-empty Google ID token first.")
+            return
+        }
+
+        do {
+            try keychain.saveString(trimmed, account: Self.googleIDTokenAccount)
+            authState = AuthState(
+                isSignedIn: true,
+                displayName: "Google session",
+                mode: .google,
+                importedCredentialSummary: "ID token stored in Keychain"
+            )
+            UserDefaults.standard.set(false, forKey: Self.localSessionKey)
+            showStatus("Google sign-in token saved.")
+        } catch {
+            showStatus("Could not store Google token: \(error.localizedDescription)")
         }
     }
 
@@ -119,6 +145,8 @@ final class AppModel: ObservableObject, @unchecked Sendable {
     func signOut() {
         keychain.delete(account: Self.apiKeyAccount)
         keychain.delete(account: Self.codexAuthAccount)
+        keychain.delete(account: Self.googleIDTokenAccount)
+        UserDefaults.standard.removeObject(forKey: Self.codexAuthFilenameKey)
         UserDefaults.standard.set(false, forKey: Self.localSessionKey)
         authState = AuthState()
         isBusy = false
@@ -481,8 +509,16 @@ final class AppModel: ObservableObject, @unchecked Sendable {
                 mode: .apiKey,
                 importedCredentialSummary: "Stored in Keychain"
             )
+        } else if let _ = keychain.loadString(account: Self.googleIDTokenAccount) {
+            authState = AuthState(
+                isSignedIn: true,
+                displayName: "Google session",
+                mode: .google,
+                importedCredentialSummary: "ID token stored in Keychain"
+            )
         } else if let imported = keychain.loadString(account: Self.codexAuthAccount) {
-            let summary = imported.truncated(maxLength: 40)
+            let summary = UserDefaults.standard.string(forKey: Self.codexAuthFilenameKey)
+                ?? imported.truncated(maxLength: 40)
             authState = AuthState(
                 isSignedIn: true,
                 displayName: "Codex credentials",

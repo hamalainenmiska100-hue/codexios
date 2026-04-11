@@ -19,6 +19,7 @@ struct RootView: View {
 struct SignInView: View {
     @EnvironmentObject private var model: AppModel
     @State private var apiKey = ""
+    @State private var googleIDToken = ""
     @State private var showingAuthImport = false
 
     var body: some View {
@@ -74,6 +75,30 @@ struct SignInView: View {
                                 Label("Import auth.json", systemImage: "square.and.arrow.down")
                             }
                             .buttonStyle(.borderedProminent)
+                        }
+                        .padding(20)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.background, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Google sign in wrapper")
+                                .font(.headline)
+                            Text("Paste a Google ID token from your existing sign-in wrapper flow and store it locally in Keychain.")
+                                .foregroundStyle(.secondary)
+
+                            SecureField("Google ID token", text: $googleIDToken)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .padding(14)
+                                .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                            Button {
+                                model.saveGoogleIDToken(googleIDToken)
+                                googleIDToken = ""
+                            } label: {
+                                Label("Save Google token", systemImage: "globe")
+                            }
+                            .buttonStyle(.bordered)
                         }
                         .padding(20)
                         .frame(maxWidth: .infinity, alignment: .leading)
